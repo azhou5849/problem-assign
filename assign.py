@@ -3,12 +3,16 @@ from random import shuffle
 
 
 """
-Stage 1: With n students and n problems, assign m problems to each student so that each problem is assigned to m students. This is essentially done with the configuration model, restarting from scratch whenever we select a problem to a student multiple times.
+Stage 1: Get input data. There are n students and n problems, and each student will be assigned m problems so that every problem is assigned to m students.
 """
-# Get input data
+# Get n and m
 n = int(input("How many students are there? (There will be the same number of problems.) "))
 m = int(input("How many problems should each student get? "))
 
+
+"""
+Stage 2: Do the assignments. This is done with the configuration model, restarting from scratch whenever we select a problem to a student multiple times.
+"""
 # Main loop
 while True:
     success = True
@@ -36,7 +40,7 @@ print(problem_edges)
 
 
 """
-Stage 2: Pick 1 problem from each student to grade, so that every problem is graded exactly once. We can essentially apply Gale-Shapley for this.
+Stage 3: Pick one problem from each student to grade, so that every problem is graded exactly once. We can run Gale-Shapley for this. (Current implementation is broken: need to do maybes instead of hard commits early)
 """
 # Initialise
 unpaired_students = list(range(n))
@@ -49,13 +53,16 @@ while len(unpaired_students) > 0:
     claimed_students = []
     for i in unpaired_students:
         j = student_edges[i][round]
-        if student_edges[i][round] in unpaired_problems:
+        if j in unpaired_problems:
             selection.append((i,j))
             claimed_students.append(i)
             unpaired_problems.pop(unpaired_problems.index(j))
+    print(selection)
+    print(unpaired_problems)
     for i in claimed_students:
         unpaired_students.pop(unpaired_students.index(i))
     round += 1
+    print(unpaired_students)
 
 # Display final selection
 print(selection)
