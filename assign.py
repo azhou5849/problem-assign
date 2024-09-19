@@ -1,68 +1,116 @@
-# Imports
+# Imports and helpers
+from sys import exit
 from random import shuffle
 
+def proceed():
+    c = input("Do you wish to proceed? (Y/N) ")
+    if c == 'N' or c == 'n':
+        exit(1)
+
+
 
 """
-Stage 1: Get input data. There are n students and n problems, and each student will be assigned m problems so that every problem is assigned to m students.
+Step 1: Get input data. There are n students and n problems, and each student will be assigned m problems so that every problem is assigned to m students.
 """
-# Get n and m
-n = int(input("How many students are there? (There will be the same number of problems.) "))
+print("-" * 80)
+print("STEP 1: INPUT DATA")
+print("-" * 80)
+
+problems_string = input("Enter a comma-separated list of the problems that will be assigned: ")
+problems = [int(p) for p in problems_string.split(',')]
+n = len(problems)
+print(f"You have provided a list of {n} problems:", problems)
+proceed()
+
+print("-" * 80)
+
+students = []
+for i in range(n):   
+    name = input(f"Enter the name of student {i}: ")
+    students.append(name)
+shuffle(students)
+print(f"There are {n} students in the class, named:")
+for i in range(n):
+    print(f"{i:>2}. {students[i]}")
+proceed()
+
+print("-" * 80)
+
 m = int(input("How many problems should each student get? "))
+print(f"Each student should receive {m} problems.")
+proceed()
+
 
 
 """
-Stage 2: Do the assignments. This is done with the configuration model, restarting from scratch whenever we select a problem to a student multiple times.
+Step 2: Do the assignments. This is done with the networkx bipartite configuration model, restarting from scratch whenever we assign a problem to a student multiple times.
 """
-# Main loop
-while True:
-    success = True
-    student_edges = {i: [] for i in range(n)}
-    problem_edges = {j: [] for j in range(n)}
-    problem_stubs = list(range(n)) * m
-    shuffle(problem_stubs)
-    for i in range(n):
+print("-" * 80)
+print("STEP 2: ASSIGNING PROBLEMS TO SOLVE")
+print("-" * 80)
+
+done = False
+while not done:
+    problems_per_student = {s: [] for s in students}
+    students_per_problem = {p: [] for p in problems}
+    done = True  # set to False when a duplicate assignment occurs
+
+    problem_copies = problems * m
+    shuffle(problem_copies)
+    for s in students:
+        provisional_list = []
         for _ in range(m):
-            j = problem_stubs.pop()
-            if j in student_edges[i]:
-                success = False
-                break
-            else:
-                student_edges[i].append(j)
-                problem_edges[j].append(i)
-        if len(student_edges[i]) < m:
+            p = problem_copies.pop()
+            provisional_list.append(p)
+            students_per_problem[p].append(s)
+        print(f"Problems for {s}: ", provisional_list)
+        if len(provisional_list) != len(set(provisional_list)):
+            print("Duplicate detected! Restarting...\n")
+            done = False
             break
-    if success:
-        break
+        else:
+            problems_per_student[s] = sorted(provisional_list)
+
 
 # Display problem assignments
-print(student_edges)
-print(problem_edges)
+print("-" * 80)
+print("Students assigned to each problem:")
+for p in problems:
+    print(f"{p:>2}: {students_per_problem[p]}")
+print("Problems assigned to each student:")
+for s in students:
+    print(f"{s:<15} {problems_per_student[s]}")
+proceed()
+
 
 
 """
-Stage 3: Pick one problem from each student to grade, so that every problem is graded exactly once. We can run Gale-Shapley for this. (Current implementation is broken: need to do maybes instead of hard commits early)
+Step 3: Pick one problem from each student to grade, so that every problem is graded exactly once. This is done with 
 """
+print("-" * 80)
+print("STEP 3: PICKING PROBLEMS TO GRADE")
+print("-" * 80)
+
 # Initialise
 unpaired_students = list(range(n))
-unpaired_problems = list(range(n))
-selection = []
+selections = {problem: None for problem in range(n)}
 
 # Iterate the offer-and-accept process
-round = 0
+rounds = {student: 0 for student in range(n)}
 while len(unpaired_students) > 0:
-    claimed_students = []
-    for i in unpaired_students:
-        j = student_edges[i][round]
-        if j in unpaired_problems:
-            selection.append((i,j))
-            claimed_students.append(i)
-            unpaired_problems.pop(unpaired_problems.index(j))
-    print(selection)
-    print(unpaired_problems)
-    for i in claimed_students:
-        unpaired_students.pop(unpaired_students.index(i))
-    round += 1
     print(unpaired_students)
+    claimed_students = []
+    for student in unpaired_students:
+        problem = problems_per_student[student][rounds[student]]
+        rounds[student] += 1
+        if selections[problem] is None:
+            selections[problem] = student
+        else:
+            old_student = selections[problem]
+            if student < old_student:
+                selections[problem] = student
+    print(selections)
+    unpaired_students = [i for i in range(n) if i not in selections.values()]
 
 # Display final selection
-print(selection)
+print(selections)
